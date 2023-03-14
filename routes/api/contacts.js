@@ -86,9 +86,7 @@ router.put(
 router.patch(
   "/:contactId/favorite",
   catchAsync(async (req, res, next) => {
-    const { contactId } = req.params;
-
-    if (!req.body) {
+    if (!req.body.favorite) {
       return next(new AppError(400, "Missing field favorite"));
     }
 

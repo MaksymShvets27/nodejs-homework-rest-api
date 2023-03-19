@@ -8,6 +8,7 @@ const mongoose = require("mongoose");
 dotenv.config({ path: "./.env" });
 
 const contactRouter = require("./routes/api/contacts");
+const userRouter = require("./routes/api/users");
 // initialize application
 const app = express();
 
@@ -28,6 +29,7 @@ app.use(express.json());
 
 // Routes
 app.use("/api/contacts", contactRouter);
+app.use("/api/users", userRouter);
 
 /**
  * Handle "not found" requests

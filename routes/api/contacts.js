@@ -1,9 +1,12 @@
 const express = require("express");
 
-const router = express.Router();
-
 const Contact = require("../../models/contactsModel.js");
 const { validate, catchAsync, AppError } = require("../../service/index.js");
+const protectMiddlewave = require("../../middlewares/authMiddlewave");
+
+const router = express.Router();
+
+router.use(protectMiddlewave.protect);
 
 router.get(
   "/",

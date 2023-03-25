@@ -15,6 +15,5 @@ exports.protect = catchAsync(async (req, res, next) => {
   if (!currentUser) return next(new AppError(401, "Not authorized2"));
 
   req.user = currentUser;
-
   next();
 });

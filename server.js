@@ -24,6 +24,9 @@ mongoose.connect(process.env.MONGO_URL).then((connection) => {
 // cors middleware
 app.use(cors());
 
+// static data
+app.use(express.static("public"));
+
 // parse request body
 app.use(express.json());
 

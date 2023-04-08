@@ -1,10 +1,11 @@
 const express = require("express");
 const jwt = require("jsonwebtoken");
+// const nodemailer = require("nodemailer");
 
 const router = express.Router();
 const authMiddlewave = require("../../middlewares/authMiddlewave");
 const { uploadUserPhoto } = require("../../middlewares/uploadUserPhoto");
-
+const uuid = require("uuid").v4;
 const User = require("../../models/usersModel");
 const ImageService = require("../../service/imageService");
 const {
@@ -12,6 +13,7 @@ const {
   catchAsync,
   AppError,
 } = require("../../service/index.js");
+const Email = require("../../service/email/email");
 
 router.post(
   "/register",
@@ -30,7 +32,27 @@ router.post(
     const newUser = await User.create({
       email,
       password,
+      verificationToken: uuid(),
     });
+
+    // const emailTransoprt = nodemailer.createTransport({
+    //   host: process.env.EMAIL_HOST,
+    //   port: process.env.EMAIL_PORT,
+    //   auth: {
+    //     user: process.env.EMAIL_USERNAME,
+    //     pass: process.env.EMAIL_PASSWORD,
+    //   },
+    // });
+
+    // const emailConfig = {
+    //   from: "Contacts App Admin <admin@blablamail.com>",
+    //   to: newUser.email,
+    //   subject: "Hello new user",
+    //   text: "Hi, glad to see you, in our platform",
+    // };
+
+    // await emailTransoprt.sendMail(emailConfig);
+    await new Email(newUser, "/users/verify/:verificationToken").sendHello();
 
     res.status(201).json({
       user: newUser,
@@ -52,6 +74,9 @@ router.put(
     const user = await User.findOne({ email }).select("+password");
 
     if (!user) return next(new AppError(401, "Email or password is wrong"));
+
+    if (!user.verify)
+      return next(new AppError(401, "Email is not verificated"));
 
     const passwordIsValid = await user.checkPassword(password, user.password);
     if (!passwordIsValid)
@@ -124,4 +149,46 @@ router.patch(
     });
   })
 );
+
+router.patch(
+  "/verify/:verificationToken",
+  catchAsync(async (req, res, next) => {
+    const { verificationToken } = req.user;
+
+    const user = await User.findOne({ verificationToken });
+
+    if (!user) {
+      return next(new AppError(401, "Not Found"));
+    }
+
+    const verificatedUser = await User.findByIdAndUpdate(
+      user.id,
+      { verificationToken: null, verify: true },
+      { new: true }
+    );
+    res.status(200).json({ user: verificatedUser });
+  })
+);
+
+router.post(
+  "/verify",
+  catchAsync(async (req, res, next) => {
+    const { email } = req.body;
+
+    if (!email) return next(new AppError(400, "Missing required field email"));
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return next(new AppError(401, "Not Found"));
+    }
+
+    if (user.verify === true) return next(new AppError(400, "Bad Request"));
+
+    await new Email(user, "/users/verify/:verificationToken").sendHello();
+
+    res.status(200).json({ message: "Verification email sent", user });
+  })
+);
+
 module.exports = router;
